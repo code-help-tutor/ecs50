@@ -1,0 +1,186 @@
+WeChat: cstutorcs
+QQ: 749389476
+Email: tutorcs@163.com
+#12:00 - 12:52
+#1:40 - 1:55
+.global knapsack
+.equ wordsize, 4
+.altmacro #enable alt macro syntax
+#this macro pushes the arguments onto the stack
+#in the order that they are given
+.macro save_vals val, rest_vals:vararg
+.ifnb \val
+push \val
+save_vals \rest_vals
+.endif
+.endm #end save_vals
+#this is undes save_vals
+#argurments are popped into the registers given from RIGHT to left
+.macro restore_regs reg, rest_regs:vararg
+.ifnb \reg
+restore_regs \rest_regs
+pop \reg
+.endif
+.endm #end restore_regs
+max: #unsigned int max(unsinged int a, unsigned int b)
+#on entry
+#esp + 8 : b
+#esp + 4 : a
+#esp
+: return address
+#prologue
+push %ebp
+movl %esp, %ebp
+.equ a, 2*wordsize #(%ebp)
+.equ b, 3*wordsize #(%ebp)
+movl a(%ebp), %eax
+movl b(%ebp), %ecx
+cmpl %eax, %ecx #b - a
+jb end_max #a is bigger
+movl %ecx, %eax #b is larger put it in the eax to be returned
+end_max:
+movl %ebp, %esp
+pop %ebp
+ret
+knapsack: #knapsack(int* weights, unsigned int* values, unsigned int num_items,
+#
+int capacity, unsigned int cur_value)
+#on entry
+#esp + 20
+#esp + 16
+#esp + 12
+#esp + 8
+#esp + 4
+#esp
+
+stack looks like
+: cur_value
+: capacity
+: num_items
+: values
+: weights
+: return address
+
+#prologue
+push %ebp
+movl %esp, %ebp
+#make space for locals
+
+subl $(2*wordsize), %esp
+.equ
+.equ
+.equ
+.equ
+.equ
+.equ
+.equ
+
+weights,
+2*wordsize #(%ebp)
+values,
+3*wordsize #(%ebp)
+num_items, 4*wordsize #(%ebp)
+capacity, 5*wordsize #(%ebp)
+cur_value, 6*wordsize #(%ebp)
+i, -1*wordsize #(%ebp)
+best_value, -2*wordsize #(%ebp)
+
+#eax
+#ebx
+#ecx
+#edx
+#esi
+#edi
+
+will
+will
+temp
+temp
+will
+will
+
+temp values
+hold i
+values
+values
+hold weights
+hold values
+
+save_vals <%ebx>, <%esi>, <%edi> #save the registers we will be using
+#best_value = cur_value
+movl cur_value(%ebp), %eax
+movl %eax, best_value(%ebp)
+movl weights(%ebp), %esi #esi = weights
+movl values(%ebp), %edi #edi = values
+
+movl $0, %ebx # i = 0
+item_loop: #for(i = 0; i < num_items; i++)
+cmpl num_items(%ebp), %ebx #i - num_items
+jae end_item_loop # i - num_items >= 0: break
+movl capacity(%ebp), %ecx #ecx will hold capacity
+subl (%esi, %ebx, wordsize), %ecx #if(capacity - weights[i] >= 0 )
+jl next_itr_item_loop #negation go to next iteration
+#now make recursive call
+#knapsack(weights + i + 1, values + i + 1, num_items - i - 1,
+#capacity - weights[i], cur_value + values[i])
+#edx
+movl
+addl
+push
+
+= cur_value + value[i]
+cur_value(%ebp), %edx
+(%edi, %ebx, wordsize), %edx
+%edx
+
+push %ecx #capacity - weights[i]
+#edx
+movl
+subl
+decl
+push
+
+= num_items - i - 1
+num_items(%ebp), %edx
+%ebx, %edx
+%edx
+%edx
+
+#edx = values + i + 1
+leal wordsize(%edi, %ebx, wordsize), %edx
+push %edx
+#edx = weights + i + 1
+leal wordsize(%esi, %ebx, wordsize), %edx
+push %edx
+#all arguments have been pushed so make the call
+call knapsack
+
+#eax now has the max knapsack consisting of this item and the
+remaining items
+#now take the max of that and the current knapsack
+#best_value = max(best_value, knapsack(weights + i + 1, values + i +
+1, num_items - i - 1,
+#
+capacity - weights[i], cur_value + values[i]));
+push %eax
+push best_value(%ebp)
+call max
+movl %eax, best_value(%ebp) #best_value = max(cur_value, re
+#now clean up all the arguments
+addl $(wordsize *(5+2)), %esp #5 for the knapsack call and 2 for the
+max
+next_itr_item_loop:
+incl %ebx #i++
+jmp item_loop
+end_item_loop:
+end_knapsack:
+restore_regs <%ebx>, <%esi>, <%edi> #restore the registers to their
+original values
+#put the return value in eax
+movl best_value(%ebp), %eax
+#epilogue
+movl %ebp, %esp
+pop %ebp
+ret
+
+

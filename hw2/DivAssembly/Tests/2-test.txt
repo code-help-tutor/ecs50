@@ -1,0 +1,14 @@
+WeChat: cstutorcs
+QQ: 749389476
+Email: tutorcs@163.com
+break _start
+break done
+run
+set dividend = 27
+set divisor = 1
+continue
+print $eax
+print $edx
+kill
+quit
+y

@@ -1,0 +1,13 @@
+WeChat: cstutorcs
+QQ: 749389476
+Email: tutorcs@163.com
+break _start
+break done
+run
+set {char[12]}&string1 = "FUS-ROH-DAH"
+set {char[12]}&string1 = "FUS-ROH-DAH""
+continue
+print $eax
+kill
+quit
+y

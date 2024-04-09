@@ -1,0 +1,271 @@
+WeChat: cstutorcs
+QQ: 749389476
+Email: tutorcs@163.com
+#this program does matrix multiplication between matrices a an b
+#space is created for the new matrix using malloc
+#this function is callable from c
+#8:55 - 11: 44
+#4:40 - 5:16
+.global matMult
+.equ wordsize, 4
+.altmacro #enable alt macro syntax
+#this macro pushes the arguments onto the stack
+#in the order that they are given
+.macro save_vals val, rest_vals:vararg
+.ifnb \val
+push \val
+save_vals \rest_vals
+.endif
+.endm #end save_vals
+#this is undes save_vals
+#argurments are popped into the registers given from RIGHT to left
+.macro restore_regs reg, rest_regs:vararg
+.ifnb \reg
+restore_regs \rest_regs
+pop \reg
+.endif
+.endm #end restore_regs
+.macro ccall func:req, arg1, args:vararg
+local argc
+argc = 0
+.irp arg, args
+argc = argc + 1
+.endr
+pusher
+call
+
+<\arg1>, \args
+\func
+
+#check if there were arguments pushed
+#if there were, clear them from the stack
+.if argc
+addl $(argc * wordsize), %esp
+.endif
+.endm #end ccall
+#recursive reverse pusher
+.macro pusher , parg1, pargs:vararg
+.ifnb \parg1
+pusher \pargs
+push
+\parg1
+.endif
+.endm
+
+.text
+#int** makeMatrix(int num_rows, int num_cols){
+#
+int** new_mat;
+#
+int i,j;
+#
+
+#
+#
+#
+#
+#
+#
+#
+#
+#}
+
+new_mat = (int**)malloc(num_rows * sizeof(int*));
+for(i = 0; i < num_rows; i++){
+new_mat[i] = (int*)malloc(num_cols * sizeof(int));
+for(j = 0; j < num_cols; j++){
+new_mat[i][j] = 0;
+}
+}
+return new_mat
+
+makeMatrix: #int** makeMatrix(int num_rows, int num_cols)
+#stack on entry looks like
+#esp + 8: num_cols
+#esp + 4: num_rows
+#esp: return address
+#prologue
+push %ebp
+movl %esp, %ebp
+#ebx will be i
+#edi will point to each row in the matrix
+#%esi will be new_mat
+save_vals <%ebx>, <%edi>, <%esi>
+#new_mat = (int**)malloc(num_rows * sizeof(int*));
+movl 2*wordsize(%ebp), %eax #num_rows
+shll $2, %eax
+#num_rows *
+sizeof(int*)
+ccall malloc <%eax>
+#(int**)malloc(num_rows *
+sizeof(int*));
+movl %eax, %esi
+#new_mat =
+(int**)malloc(num_rows * sizeof(int*));
+#now do the for loop initalization
+movl $0, %ebx #i = 0
+init_for:
+#i < num_rows
+#i - num_rows < 0
+#neg i - num_rows >= 0
+cmpl 2*wordsize(%ebp), %ebx
+jge end_init_for
+#new_mat[i] = (int*)malloc(num_cols * sizeof(int));
+movl 3*wordsize(%ebp), %eax
+#num_cols
+shll $2, %eax
+#num_rows * sizeof(int*)
+ccall malloc <%eax>
+#(int**)malloc(num_rows * sizeof(int*));
+movl %eax, %edi
+#copy over the address of this row to edi
+movl %edi, (%esi, %ebx, wordsize) #new_mat[i] =
+(int*)malloc(num_cols*size(int))
+#this is the inner for loop
+#where we intilaize all the elements to 0
+movl $0, %eax
+movl 3*wordsize(%ebp), %ecx #set up the counter
+rep stosl
+incl %ebx #i++
+jmp init_for
+end_init_for:
+
+#place the result in %eax
+movl %esi, %eax
+#restore the registers we used
+restore_regs <%ebx>, <%edi>, <%esi>
+#epilogue
+movl %ebp, %esp
+pop %ebp
+#go back to where we were called
+ret
+matMult: #int** matmult(int **a, int num_rows_a, int num_cols_a, int**b, int
+num_rows_b, int_num_cols_b)
+#stack looks like the following on entry
+#esp + 24: num_cols_b
+#esp + 20: num_rows_b
+#esp + 16: b
+#esp + 12: num_cols_a
+#esp + 8: num_rows_a
+#esp + 4: a
+#esp: return address
+at
+
+#some equs so I don't have to remember where the arguments and locals are
+.equ
+.equ
+.equ
+.equ
+.equ
+.equ
+.equ
+.equ
+.equ
+.equ
+.equ
+.equ
+
+a, 2*wordsize #(%ebp)
+num_rows_a, 3*wordsize #(%ebp)
+num_cols_a, 4*wordsize #(%ebp)
+b, 5*wordsize #(%ebp)
+num_rows_b, 6*wordsize #(%ebp)
+num_cols_b, 7*wordsize #(%ebp)
+i, -wordsize #(%ebp)
+j, -2*wordsize #(%ebp)
+k, -3*wordsize #(%ebp)
+a_i_k, -4*wordsize #(%ebp)
+b_k_j, -5*wordsize #(%ebp)
+dot_prod, -6*wordsize #(%ebp)
+
+#prologue
+push %ebp
+movl %esp, %ebp
+subl $(6*wordsize), %esp
+
+#these registers may contain live values and since we are using them we
+have to save them
+save_vals <%ebx>, <%esi>, <%edi>
+#make the matrix
+movl num_rows_a(%ebp), %eax
+movl num_cols_b(%ebp), %ecx
+ccall makeMatrix <%eax>, <%ecx>
+movl %eax, %edi #place the new matrix in %edi
+#eax will be for temporary values
+#ebx will be i
+#ecx will be j
+
+#edx will be k
+#esi will be swap betwen a and b
+#edi will be the result matrix c
+movl $0, %ebx #i = 0
+row_for: #for each row in matrix a
+cmpl num_rows_a(%ebp), %ebx #i < num_rows_a == i
+neg i - num_rows_a >= 0
+jge end_row_for
+
+- num_rows_a < 0.
+
+movl $0, %ecx #j = 0
+col_for: #for each colum in matrix b
+cmpl num_cols_b(%ebp), %ecx# j < num_cols_b == j - num_cols_b
+<0. neg j - num_cols_b >= 0
+jge end_col_for
+movl $0, %edx #k = 0
+movl $0, dot_prod(%ebp) #dot_prod = 0
+elem_for: #for each element in a row of a and column of b
+cmpl num_cols_a(%ebp), %edx #number of columns in a is
+equal to the number of rows in b
+jge end_elem_for
+#get
+movl
+movl
+movl
+
+a[i][k]
+a(%ebp), %esi #esi = a
+(%esi, %ebx, wordsize), %esi #esi = a[i]
+(%esi, %edx, wordsize), %eax #eax = a[i][k]
+
+#get
+movl
+movl
+movl
+
+b[k]
+b(%ebp), %esi #esi = b
+(%esi, %edx, wordsize), %esi #esi = b[k]
+%edx, k(%ebp) #about to do a multiply so need to
+
+save %edx's value
+#dot_prod += a[i][k] * b[k][j]
+imull (%esi, %ecx, wordsize) #a[i][k] * b[k][j]
+addl %eax, dot_prod(%ebp) #dot_prod += a[i][k] * b[k][j]
+movl k(%ebp), %edx # edx = k again
+incl %edx #k++
+jmp elem_for
+end_elem_for:
+#get c[i]
+movl %edi, %esi
+movl (%esi, %ebx, wordsize), %esi #esi = c[i]
+#c[i][j] = dot_prod
+movl dot_prod(%ebp), %eax
+movl %eax, (%esi, %ecx, wordsize)
+incl %ecx #j++
+jmp col_for
+end_col_for:
+incl %ebx #i++
+jmp row_for
+end_row_for:
+#place the return result in eax
+movl %edi, %eax
+
+#restore these registers to their orignal values
+restore_regs <%ebx>, <%esi>, <%edi>
+#prologue
+movl %ebp, %esp
+pop %ebp
+#return to where we were called
+ret
+
+
